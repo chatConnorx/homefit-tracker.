@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#14231f">
+<meta name="description" content="A simple home workout tracker that saves progress on your phone.">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon-192.svg" type="image/svg+xml">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>HomeFit Tracker</title>
+<style>
+:root{--bg:#f4f6f3;--card:#fff;--ink:#17231f;--muted:#64716b;--accent:#246b52;--accent2:#dcefe5;--line:#e2e8e3;--warn:#fff5db;--shadow:0 8px 24px rgba(22,42,31,.07)}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;padding-bottom:90px}
+header{background:#14231f;color:#fff;padding:22px 18px 18px;border-radius:0 0 24px 24px}
+.topline{display:flex;justify-content:space-between;align-items:center;gap:12px}.brand{font-size:12px;letter-spacing:.13em;text-transform:uppercase;opacity:.75;font-weight:700}
+h1{font-size:26px;line-height:1.1;margin:8px 0}.date{color:#d0ded6;font-size:14px}
+main{max-width:720px;margin:0 auto;padding:16px}
+.tabs{display:flex;gap:8px;margin:2px 0 16px}.tab{flex:1;border:0;border-radius:13px;padding:12px 8px;font-weight:700;background:#e5eae6;color:#45544c}.tab.active{background:var(--accent);color:white}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px;margin-bottom:14px;box-shadow:var(--shadow)}
+.row{display:flex;justify-content:space-between;align-items:center;gap:12px}.muted{color:var(--muted)}.small{font-size:13px}.pill{font-size:12px;font-weight:700;background:var(--accent2);color:var(--accent);padding:5px 9px;border-radius:999px;white-space:nowrap}
+h2{font-size:19px;margin:0 0 7px}h3{font-size:16px;margin:0 0 5px}
+.progressbar{height:8px;border-radius:999px;background:#e8eee9;overflow:hidden;margin:10px 0 4px}.progressbar span{display:block;height:100%;background:var(--accent);width:0;transition:width .2s}
+.exercise{border-top:1px solid var(--line);padding:13px 0;display:grid;grid-template-columns:24px 1fr;gap:10px;align-items:start}.exercise:first-of-type{border-top:0}
+.exercise input{width:20px;height:20px;accent-color:var(--accent);margin:2px 0 0}
+.ex-title{font-weight:700}.prescription{font-size:13px;color:var(--muted);margin-top:2px}.note{width:100%;margin-top:7px;border:1px solid var(--line);border-radius:10px;padding:9px;font:inherit;font-size:14px;background:#fbfcfb}
+button{cursor:pointer;font:inherit}.primary,.secondary,.danger{border:0;border-radius:12px;padding:11px 13px;font-weight:700}.primary{background:var(--accent);color:#fff}.secondary{background:#e8eee9;color:var(--ink)}.danger{background:#fce7e5;color:#8c2b25}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}.stat{background:#f4f7f4;border-radius:13px;padding:12px}.stat strong{font-size:22px;display:block}.stat span{font-size:12px;color:var(--muted)}
+.daygrid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin:12px 0}.daybtn{border:1px solid var(--line);border-radius:10px;padding:8px 2px;background:#fff;font-size:12px;text-align:center}.daybtn strong{display:block;font-size:14px}.daybtn.selected{border-color:var(--accent);background:var(--accent2);color:var(--accent)}
+.notice{background:var(--warn);border:1px solid #f1dfac;border-radius:13px;padding:12px;font-size:13px;color:#5e4a17}
+.empty{text-align:center;padding:22px 8px;color:var(--muted)}.history-item{padding:11px 0;border-top:1px solid var(--line)}.history-item:first-child{border-top:0}
+footer{max-width:720px;margin:0 auto;padding:0 16px 20px;color:var(--muted);font-size:12px}
+@media(min-width:600px){header{padding:28px max(22px,calc((100vw - 684px)/2)) 22px}h1{font-size:30px}}
+</style>
+</head>
+<body>
+<header>
+ <div class="topline"><div class="brand">HOMEFIT • TRACKER</div><div id="weekLabel" class="small" style="color:#d0ded6"></div></div>
+ <h1>Small steps. Stronger every week.</h1>
+ <div class="date" id="todayLabel"></div>
+</header>
+<main>
+ <div class="tabs" role="tablist">
+  <button class="tab active" data-tab="workout">Workout</button>
+  <button class="tab" data-tab="progress">Progress</button>
+ </div>
+ <section id="workoutView">
+  <div class="card">
+   <div class="row"><div><div class="muted small">THIS WEEK</div><h2 id="weekTitle">Your plan</h2></div><span class="pill" id="weekPct">0% complete</span></div>
+   <div class="progressbar"><span id="weekBar"></span></div>
+   <div class="daygrid" id="dayGrid"></div>
+   <div class="row"><div><h2 id="dayTitle">Monday</h2><div id="daySubtitle" class="muted small"></div></div><span id="dayPill" class="pill"></span></div>
+  </div>
+  <div id="exerciseCard" class="card"></div>
+  <div class="card">
+   <h3>Quick check-in</h3>
+   <label class="small muted" for="energy">How did you feel today?</label>
+   <select id="energy" class="note">
+    <option value="">Choose one (optional)</option><option>Great energy</option><option>Good</option><option>Okay</option><option>Tired — take it easier</option>
+   </select>
+   <label class="small muted" for="dayNote" style="display:block;margin-top:9px">Notes (optional)</label>
+   <textarea id="dayNote" class="note" rows="2" placeholder="How did the workout feel?"></textarea>
+   <div class="actions"><button class="primary" id="saveDay">Save check-in</button><button class="secondary" id="finishDay">Mark day complete</button></div>
+  </div>
+  <div class="notice">Use controlled form and stop if you feel pain, dizziness or unwell. Five-kilo dumbbells can still be challenging: choose a version you can do with good technique, and ask a trusted adult or qualified coach if unsure. Rest days are part of progress.</div>
+ </section>
+ <section id="progressView" hidden>
+  <div class="card">
+   <h2>Your progress</h2><p class="muted small">This tracker saves on this device in this browser. It doesn't upload your workout data.</p>
+   <div class="stats">
+    <div class="stat"><strong id="statWorkouts">0</strong><span>Days completed</span></div>
+    <div class="stat"><strong id="statChecks">0</strong><span>Exercises checked</span></div>
+    <div class="stat"><strong id="statWeeks">0</strong><span>Weeks with activity</span></div>
+   </div>
+  </div>
+  <div class="card"><h2>Recent history</h2><div id="historyList"></div></div>
+  <div class="card">
+   <h3>Data & backup</h3><p class="muted small">Export a backup before clearing browser data or changing phones.</p>
+   <div class="actions"><button class="primary" id="exportData">Export backup</button><label class="secondary" for="importFile" style="display:inline-flex;align-items:center">Import backup</label><input id="importFile" type="file" accept="application/json" hidden></div>
+   <div class="actions"><button class="danger" id="resetData">Clear all saved data</button></div>
+  </div>
+ </section>
+</main>
+<footer>Built for home workouts with bodyweight and 5 kg dumbbells. Adjust exercises to your ability and keep technique first.</footer>
+<script>
+const DAYS = [
+ {name:"Monday",short:"MON",subtitle:"Full body A",type:"train",items:[
+  ["Squat to chair","3 sets × 8–15 reps","Bodyweight; use a chair for depth control."],
+  ["Dumbbell floor press","3 × 8–15 reps","Lie on the floor; use one or two dumbbells if safe."],
+  ["One-arm dumbbell row","3 × 10–15 each side","Support your free hand on a sturdy chair."],
+  ["Glute bridge","3 × 12–20 reps","Pause briefly at the top."],
+  ["Dead bug","2 × 6–10 each side","Move slowly and keep your back comfortable."]
+ ]},
+ {name:"Tuesday",short:"TUE",subtitle:"Core, balance & mobility",type:"light",items:[
+  ["Bird dog","2 × 8 each side","Move slowly; keep hips level."],
+  ["Calf raises","2 × 12–20 reps","Hold a wall or chair for balance."],
+  ["Side plank","2 × 15–30 sec each side","Use knees-down version if needed."],
+  ["Easy mobility","5–10 minutes","Gentle shoulder, hip and ankle movements."]
+ ]},
+ {name:"Wednesday",short:"WED",subtitle:"Full body B",type:"train",items:[
+  ["Reverse lunge","3 × 6–12 each leg","Hold a wall for balance or use split squats."],
+  ["Dumbbell shoulder press","2–3 × 8–15 reps","Keep ribs down; stop if uncomfortable."],
+  ["Dumbbell Romanian deadlift","3 × 10–15 reps","Hinge at hips; keep back neutral."],
+  ["Push-ups","2–3 × 6–15 reps","Use a wall or sturdy raised surface if needed."],
+  ["Plank","2 × 20–40 sec","Keep breathing; stop before form breaks."]
+ ]},
+ {name:"Thursday",short:"THU",subtitle:"Recovery & movement",type:"light",items:[
+  ["Easy walk or gentle activity","10–20 minutes","Keep it comfortable; no need to push hard."],
+  ["Hip and ankle mobility","5–8 minutes","Gentle, pain-free range of motion."],
+  ["Shoulder mobility","3–5 minutes","Slow arm circles and comfortable reaches."]
+ ]},
+ {name:"Friday",short:"FRI",subtitle:"Full body C",type:"train",items:[
+  ["Goblet squat","3 × 10–15 reps","Hold one dumbbell close to your chest if comfortable."],
+  ["Dumbbell row","3 × 10–15 reps","Control the lowering phase."],
+  ["Dumbbell floor press or push-ups","3 × 8–15 reps","Choose the version with better technique."],
+  ["Single-leg glute bridge","2 × 8–12 each leg","Use regular glute bridges if too difficult."],
+  ["Biceps curl","2 × 10–15 reps","No swinging; lower slowly."],
+  ["Bird dog","2 × 8 each side","Controlled movement."]
+ ]},
+ {name:"Saturday",short:"SAT",subtitle:"Enjoyable activity or recovery",type:"light",items:[
+  ["Choose an activity","Optional 15–30 minutes","Walk, casual football, cycling or something you enjoy."],
+  ["Gentle stretching","Optional 5 minutes","Only if it feels good."]
+ ]},
+ {name:"Sunday",short:"SUN",subtitle:"Rest day",type:"rest",items:[
+  ["Rest and recharge","No workout required","Eat regularly, hydrate and get enough sleep."]
+ ]}
+];
+const KEY="homefit_tracker_v1";
+const state = loadState();
+function loadState(){try{return JSON.parse(localStorage.getItem(KEY))||{days:{},weeks:{}}}catch(e){return {days:{},weeks:{}}}}
+function persist(){localStorage.setItem(KEY,JSON.stringify(state))}
+function dateKey(d=new Date()){return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")}
+function mondayOf(d){const x=new Date(d.getFullYear(),d.getMonth(),d.getDate());let n=(x.getDay()+6)%7;x.setDate(x.getDate()-n);return x}
+function weekKey(d=new Date()){return dateKey(mondayOf(d))}
+function dateForDay(i){const d=mondayOf(new Date());d.setDate(d.getDate()+i);return d}
+function pretty(d,opts={weekday:"short",day:"numeric",month:"short"}){return d.toLocaleDateString(undefined,opts)}
+function getDayState(key){if(!state.days[key])state.days[key]={checks:{},energy:"",note:"",complete:false};return state.days[key]}
+let selectedDay=(new Date().getDay()+6)%7;
+function drawHeader(){document.getElementById("todayLabel").textContent=new Date().toLocaleDateString(undefined,{weekday:"long",day:"numeric",month:"long"});document.getElementById("weekLabel").textContent="Week of "+pretty(mondayOf(new Date()),{day:"numeric",month:"short"});document.getElementById("weekTitle").textContent="Your plan · "+pretty(mondayOf(new Date()),{day:"numeric",month:"short"});}
+function drawGrid(){
+ const g=document.getElementById("dayGrid");g.innerHTML="";
+ DAYS.forEach((day,i)=>{const d=dateForDay(i),k=dateKey(d),s=getDayState(k);const b=document.createElement("button");b.className="daybtn"+(i===selectedDay?" selected":"");b.innerHTML=`${day.short}<strong>${d.getDate()}</strong><span>${s.complete?"✓":""}</span>`;b.onclick=()=>{selectedDay=i;drawGrid();drawDay()};g.appendChild(b)});
+ const allKeys=DAYS.map((_,i)=>dateKey(dateForDay(i)));let total=0,done=0;allKeys.forEach(k=>{const day=state.days[k];if(day){total+=Object.keys(day.checks||{}).length;done+=Object.values(day.checks||{}).filter(Boolean).length}});
+ const expected=DAYS.reduce((a,d)=>a+d.items.length,0);const pct=expected?Math.round(done/expected*100):0;document.getElementById("weekPct").textContent=pct+"% exercises";document.getElementById("weekBar").style.width=pct+"%";
+}
+function drawDay(){
+ const d=DAYS[selectedDay],date=dateForDay(selectedDay),k=dateKey(date),s=getDayState(k);
+ document.getElementById("dayTitle").textContent=d.name+" · "+pretty(date,{day:"numeric",month:"short"});
+ document.getElementById("daySubtitle").textContent=d.subtitle;
+ document.getElementById("dayPill").textContent=d.type==="train"?"Strength":d.type==="rest"?"Rest":"Light day";
+ const card=document.getElementById("exerciseCard");card.innerHTML="";
+ const title=document.createElement("h2");title.textContent=d.type==="rest"?"Rest is training too": "Today's checklist";card.appendChild(title);
+ const p=document.createElement("p");p.className="muted small";p.textContent=d.type==="rest"?"No exercises to complete today. Recharge for next week.":"Tick exercises as you go. The suggested sets and reps are a guide, not a test.";card.appendChild(p);
+ d.items.forEach((it,i)=>{
+  const row=document.createElement("div");row.className="exercise";
+  const cb=document.createElement("input");cb.type="checkbox";cb.checked=!!s.checks[i];cb.setAttribute("aria-label","Mark "+it[0]+" complete");
+  cb.onchange=()=>{s.checks[i]=cb.checked;persist();drawGrid();drawProgressStats()};
+  const body=document.createElement("div");const name=document.createElement("div");name.className="ex-title";name.textContent=it[0];
+  const pres=document.createElement("div");pres.className="prescription";pres.textContent=it[1];
+  const note=document.createElement("div");note.className="small muted";note.textContent=it[2];
+  body.append(name,pres,note);row.append(cb,body);card.appendChild(row);
+ });
+ document.getElementById("energy").value=s.energy||"";document.getElementById("dayNote").value=s.note||"";
+ document.getElementById("finishDay").textContent=s.complete?"Day completed ✓":"Mark day complete";
+}
+document.getElementById("saveDay").onclick=()=>{const s=getDayState(dateKey(dateForDay(selectedDay)));s.energy=document.getElementById("energy").value;s.note=document.getElementById("dayNote").value;persist();drawProgressStats();alert("Check-in saved on this device.")};
+document.getElementById("finishDay").onclick=()=>{const s=getDayState(dateKey(dateForDay(selectedDay)));s.complete=!s.complete;persist();drawGrid();drawDay();drawProgressStats()};
+document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{document.querySelectorAll(".tab").forEach(x=>x.classList.toggle("active",x===b));document.getElementById("workoutView").hidden=b.dataset.tab!=="workout";document.getElementById("progressView").hidden=b.dataset.tab!=="progress";if(b.dataset.tab==="progress")drawProgress()});
+function drawProgressStats(){
+ const entries=Object.entries(state.days);document.getElementById("statWorkouts").textContent=entries.filter(([k,v])=>v.complete).length;
+ document.getElementById("statChecks").textContent=entries.reduce((n,[k,v])=>n+Object.values(v.checks||{}).filter(Boolean).length,0);
+ document.getElementById("statWeeks").textContent=new Set(entries.filter(([k,v])=>v.complete||Object.values(v.checks||{}).some(Boolean)).map(([k])=>{const d=new Date(k+"T12:00:00");return weekKey(d)})).size;
+}
+function drawProgress(){drawProgressStats();const list=document.getElementById("historyList");list.innerHTML="";const entries=Object.entries(state.days).filter(([k,v])=>v.complete||Object.values(v.checks||{}).some(Boolean)||v.note||v.energy).sort((a,b)=>b[0].localeCompare(a[0])).slice(0,12);if(!entries.length){list.innerHTML='<div class="empty">Your completed days and check-ins will appear here.</div>';return}
+ entries.forEach(([k,v])=>{const d=new Date(k+"T12:00:00");const row=document.createElement("div");row.className="history-item";const strong=document.createElement("strong");strong.textContent=pretty(d,{weekday:"short",day:"numeric",month:"short",year:"numeric"});const meta=document.createElement("div");meta.className="small muted";const checked=Object.values(v.checks||{}).filter(Boolean).length;meta.textContent=(v.complete?"Day completed · ":"") + checked+" exercise(s) checked"+(v.energy?" · "+v.energy:"");row.append(strong,meta);if(v.note){const note=document.createElement("div");note.className="small";note.textContent=v.note;row.append(note)}list.appendChild(row)});
+}
+document.getElementById("exportData").onclick=()=>{const blob=new Blob([JSON.stringify(state,null,2)],{type:"application/json"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="homefit-backup-"+dateKey()+".json";a.click();URL.revokeObjectURL(a.href)};
+document.getElementById("importFile").onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const imported=JSON.parse(await f.text());if(!imported.days||typeof imported.days!=="object")throw new Error();if(confirm("Import this backup? It will replace the data currently saved on this device.")){state.days=imported.days;state.weeks=imported.weeks||{};persist();drawGrid();drawDay();drawProgress();alert("Backup imported.")}}catch(err){alert("That backup file couldn't be read.")}e.target.value=""};
+document.getElementById("resetData").onclick=()=>{if(confirm("Clear all saved workouts and notes on this device? Export a backup first if you want to keep them.")){state.days={};state.weeks={};persist();drawGrid();drawDay();drawProgress();}};
+drawHeader();drawGrid();drawDay();drawProgressStats();
+if("serviceWorker" in navigator && location.protocol.startsWith("http")){window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(()=>{}))}
+</script>
+</body>
+</html>
